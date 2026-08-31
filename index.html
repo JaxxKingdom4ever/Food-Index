@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111418">
+  <meta name="description" content="Experimental ingredient purity, nutritional balance, and health index lookup for packaged foods.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="style.css">
+  <title>Food Index</title>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">experimental food scoring</div>
+        <h1>Food Index</h1>
+      </div>
+      <button id="installBtn" class="ghost-btn" type="button" hidden>Install</button>
+    </header>
+
+    <main id="main" class="main">
+      <section id="homeView" class="view active" aria-labelledby="homeTitle">
+        <div class="hero">
+          <p class="kicker">Look up a product. See what the calories buy you.</p>
+          <h2 id="homeTitle">Scan, search, score.</h2>
+          <p class="muted">Purity judges the ingredient list. Balance judges nutrition per 100 kcal. Index combines both.</p>
+        </div>
+
+        <form id="searchForm" class="search-card">
+          <label for="searchInput">Product name or barcode</label>
+          <div class="search-row">
+            <input id="searchInput" type="search" inputmode="search" autocomplete="off" placeholder="e.g. Pringles Original or 038000138423">
+            <button class="primary-btn" type="submit">Search</button>
+          </div>
+          <div class="action-row">
+            <button id="scanBtn" class="secondary-btn" type="button">▣ Scan barcode</button>
+            <button id="demoBtn" class="secondary-btn" type="button">Try demo data</button>
+          </div>
+          <p id="searchStatus" class="status" aria-live="polite"></p>
+        </form>
+
+        <section id="scannerPanel" class="panel scanner-panel" hidden>
+          <div class="section-head">
+            <div>
+              <span class="section-label">Camera</span>
+              <h3>Point at a UPC / EAN barcode</h3>
+            </div>
+            <button id="closeScannerBtn" class="ghost-btn" type="button">Close</button>
+          </div>
+          <div class="video-wrap">
+            <video id="scannerVideo" playsinline muted></video>
+            <div class="scan-frame" aria-hidden="true"></div>
+          </div>
+          <p id="scannerStatus" class="status">Camera scanning requires HTTPS and browser barcode support.</p>
+        </section>
+
+        <section id="resultsSection" class="results-section" hidden>
+          <div class="section-head">
+            <div>
+              <span class="section-label">Matches</span>
+              <h3 id="resultsTitle">Products</h3>
+            </div>
+          </div>
+          <div id="searchResults" class="product-list"></div>
+        </section>
+      </section>
+
+      <section id="productView" class="view" aria-labelledby="productName">
+        <button id="backBtn" class="back-btn" type="button">← Back</button>
+        <article id="productCard" class="product-page">
+          <div class="product-intro">
+            <img id="productImage" class="product-image" alt="" hidden>
+            <div class="product-meta">
+              <div id="productBrand" class="eyebrow"></div>
+              <h2 id="productName">Product</h2>
+              <div id="productSub" class="muted"></div>
+            </div>
+          </div>
+
+          <section class="score-hero" aria-label="Health Index score">
+            <div class="index-dial">
+              <span class="dial-label">Index</span>
+              <strong id="indexScore">—</strong>
+              <span>/100</span>
+            </div>
+            <div class="score-pairs">
+              <div><span>Purity</span><strong id="purityScore">—</strong></div>
+              <div><span>Balance</span><strong id="balanceScore">—</strong></div>
+              <div><span>Confidence</span><strong id="confidenceScore">—</strong></div>
+            </div>
+          </section>
+
+          <p id="scoreSummary" class="score-summary"></p>
+
+          <div class="tabs" role="tablist" aria-label="Score details">
+            <button class="tab active" data-tab="overview" type="button" role="tab">Overview</button>
+            <button class="tab" data-tab="ingredients" type="button" role="tab">Ingredients</button>
+            <button class="tab" data-tab="nutrition" type="button" role="tab">Nutrition</button>
+          </div>
+
+          <section id="tab-overview" class="tab-panel active">
+            <div class="metric-grid">
+              <div class="metric-card"><span>Macro balance</span><strong id="macroMetric">—</strong></div>
+              <div class="metric-card"><span>Micronutrients</span><strong id="microMetric">—</strong></div>
+              <div class="metric-card"><span>Fiber</span><strong id="fiberMetric">—</strong></div>
+              <div class="metric-card"><span>Limit nutrients</span><strong id="limitMetric">—</strong></div>
+            </div>
+            <div id="flagsBox" class="panel compact"></div>
+            <p class="fineprint">Experimental score, not an FDA rating or medical recommendation. Ingredient classifications are a configurable model and should be reviewed as the database grows.</p>
+          </section>
+
+          <section id="tab-ingredients" class="tab-panel">
+            <div class="section-head compact-head">
+              <div>
+                <span class="section-label">Purity v2</span>
+                <h3>Weighted ingredient list</h3>
+              </div>
+            </div>
+            <div id="ingredientLegend" class="legend"></div>
+            <div id="ingredientList" class="ingredient-list"></div>
+            <p id="ingredientNote" class="fineprint"></p>
+          </section>
+
+          <section id="tab-nutrition" class="tab-panel">
+            <div class="section-head compact-head">
+              <div>
+                <span class="section-label">Normalized</span>
+                <h3>Per 100 kcal</h3>
+              </div>
+            </div>
+            <div id="nutritionList" class="nutrition-list"></div>
+            <p id="nutritionNote" class="fineprint"></p>
+          </section>
+        </article>
+      </section>
+
+      <section id="historyView" class="view" aria-labelledby="historyTitle">
+        <div class="section-head">
+          <div>
+            <span class="section-label">On this device</span>
+            <h2 id="historyTitle">Recent lookups</h2>
+          </div>
+          <button id="clearHistoryBtn" class="ghost-btn" type="button">Clear</button>
+        </div>
+        <div id="historyList" class="product-list"></div>
+        <p id="historyEmpty" class="empty-state">Nothing here yet. Scan something weird.</p>
+      </section>
+
+      <section id="aboutView" class="view" aria-labelledby="aboutTitle">
+        <span class="section-label">Model v0.1</span>
+        <h2 id="aboutTitle">How the score works</h2>
+        <div class="about-stack">
+          <div class="panel">
+            <h3>Purity v2</h3>
+            <p>Ingredients are classified as wholesome, neutral, questionable, or noxious, then weighted by ingredient-list position. Ingredients explicitly listed at 2% or less receive a trace-weight reduction.</p>
+            <code>P = 100 × Σ(qᵢwᵢ) / Σwᵢ</code>
+          </div>
+          <div class="panel">
+            <h3>Nutritional Balance</h3>
+            <p>Nutrition is normalized to 100 kcal and scored against the 50/25/25 macro target, 5%-DV micronutrient target, 1.4 g fiber target, and limit nutrients.</p>
+            <code>B = .35M + .35A + .10F + .20L</code>
+          </div>
+          <div class="panel">
+            <h3>Health Index</h3>
+            <p>The harmonic mean makes the weaker of Purity and Balance matter. One dimension cannot fully compensate for a poor score in the other.</p>
+            <code>Index = 2PB / (P + B)</code>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Main navigation">
+      <button class="nav-btn active" data-view="homeView" type="button"><span>⌕</span>Lookup</button>
+      <button class="nav-btn" data-view="historyView" type="button"><span>◴</span>History</button>
+      <button class="nav-btn" data-view="aboutView" type="button"><span>ⓘ</span>Model</button>
+    </nav>
+  </div>
+
+  <script src="ingredients.js"></script>
+  <script src="scoring.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
